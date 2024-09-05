@@ -3,12 +3,44 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 )
 
+type DatabaseConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	Database string
+}
+
+func LoadDatabaseConfig() DatabaseConfig {
+	return DatabaseConfig{
+		Host:     getEnv("DB_HOST", "localhost"),
+		Port:     getEnv("DB_PORT", "3306"),
+		User:     getEnv("DB_USER", "username"),
+		Password: getEnv("DB_PASSWORD", "userpass"),
+		Database: getEnv("DB_DATABASE", "goproject"),
+	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
+}
+
 func main() {
-	dsn := "username:userpass@tcp(127.0.0.1:3306)/goproject"
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+	}
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", LoadDatabaseConfig().User, LoadDatabaseConfig().Password, LoadDatabaseConfig().Host, LoadDatabaseConfig().Port, LoadDatabaseConfig().Database)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		panic(err)
@@ -19,7 +51,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Print("Successfully connected!")
+	fmt.Print("Successfully connected! \n")
 
 	selectRows(db)
 }
